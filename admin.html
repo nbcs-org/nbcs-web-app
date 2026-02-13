@@ -55,12 +55,18 @@
 
     <div class="row" style="margin-top:12px;">
       <button id="logoutBtn">Logout</button>
+      <button id="backBtn">Back to Time Tracker</button>
     </div>
   </div>
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbz52CgThDKGILFRLolyRleu5jnRgo3ybwxkfxB6ldlnW4NM6uBsm9KCn-xk2X2GdIK-tQ/exec"; // same /exec URL
+  
+  let token = localStorage.getItem("tt_token") || null;
+  let myName = localStorage.getItem("tt_fullName") || null;
+  let myRole = localStorage.getItem("tt_role") || null;
 
+  
   let token = null;
   let myName = null;
 
@@ -70,16 +76,30 @@
   }
 
   async function api(payload){
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!data.ok) throw new Error(data.error || "Request failed");
-    return data;
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+
+  let data;
+  try { data = JSON.parse(text); }
+  catch {
+    throw new Error("Non-JSON response from Apps Script. Likely wrong /exec URL or access settings. First 200 chars:\n" +
+                    text.slice(0, 200));
   }
 
+  if (!data.ok) throw new Error(data.error || "Request failed");
+  return data;
+  }
+
+  document.getElementById("backBtn").onclick = () => {
+  window.location.href = "./index.html";
+  };
+
+  
   document.getElementById("loginBtn").onclick = async () => {
     const msg = document.getElementById("loginMsg");
     setMsg(msg, "", "err");
@@ -150,6 +170,29 @@
     document.getElementById("mainMsg").textContent = "";
     document.getElementById("tbl").classList.add("hidden");
   };
+
+  (async function autoLogin(){
+  if (!token) return; // no saved session; user can still login manually
+  try {
+    const out = await api({ action: "WHOAMI", token });
+    myName = out.fullName;
+    myRole = out.role;
+
+    document.getElementById("who").textContent = `Logged in as: ${myName} (${myRole})`;
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("mainCard").classList.remove("hidden");
+
+    // Optional: immediately load logs
+    // document.getElementById("loadBtn").click();
+  } catch (e) {
+    // token expired or invalid — clear and show login
+    localStorage.removeItem("tt_token");
+    localStorage.removeItem("tt_fullName");
+    localStorage.removeItem("tt_role");
+    token = null;
+  }
+  })();
+
 </script>
 </body>
 </html>
