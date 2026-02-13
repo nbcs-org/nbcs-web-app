@@ -21,10 +21,12 @@ table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
 th { cursor: pointer; user-select: none; }
 .spacer { flex: 1; }
-tr.dayA td { background: #fafafa; }
+  
+tr.dayA td { background: #f2f7ff; }  
 tr.dayB td { background: #ffffff; }
-</style>
 
+tr.dayA td, tr.dayB td { background-clip: padding-box; }
+  
 </style>
 </head>
 
