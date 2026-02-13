@@ -1,394 +1,270 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Attendance Viewer</title>
-  <style>
-    body { font-family: system-ui, Arial; max-width: 980px; margin: 32px auto; padding: 0 16px; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
-    input, select { padding: 10px; font-size: 14px; }
-    button { padding: 10px 12px; font-size: 14px; cursor: pointer; }
-    .err { color: #b00020; margin-top: 10px; white-space: pre-wrap; }
-    .ok { color: #0a7a2f; margin-top: 10px; white-space: pre-wrap; }
-    .hidden { display: none; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Attendance Viewer</title>
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
-    th { cursor: pointer; user-select: none; }
-    th .hint { font-weight: 400; color: #777; margin-left: 6px; font-size: 11px; }
-    .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 999px; color: #444; }
-    .spacer { flex: 1; }
-  </style>
+<style>
+body { font-family: system-ui, Arial; max-width: 980px; margin: 32px auto; padding: 0 16px; }
+.card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
+input, select { padding: 10px; font-size: 14px; }
+button { padding: 10px 12px; font-size: 14px; cursor: pointer; }
+.err { color: #b00020; margin-top: 10px; white-space: pre-wrap; }
+.ok { color: #0a7a2f; margin-top: 10px; white-space: pre-wrap; }
+.hidden { display: none; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
+th { cursor: pointer; user-select: none; }
+.spacer { flex: 1; }
+</style>
 </head>
+
 <body>
 
-  <div class="card" id="loginCard">
-    <h2 style="margin:0 0 10px;">Login</h2>
-    <div class="row">
-      <input id="username" placeholder="Username" />
-      <input id="password" placeholder="Password" type="password" />
-      <button id="loginBtn">Login</button>
-    </div>
-    <div id="loginMsg" class="err"></div>
+<div class="card" id="loginCard">
+  <h2>Login</h2>
+  <div class="row">
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+  </div>
+  <div id="loginMsg" class="err"></div>
+</div>
+
+<div class="card hidden" id="mainCard">
+  <div class="row">
+    <h2 id="who" style="margin:0;"></h2>
+    <div class="spacer"></div>
   </div>
 
-  <div class="card hidden" id="mainCard">
-    <div class="row" style="margin-top:0;">
-      <h2 id="who" style="margin:0;"></h2>
-      <div class="spacer"></div>
-      <span class="pill" id="statsPill">Rows: 0</span>
-    </div>
-
-    <!-- Load controls -->
-    <div class="row">
-      <input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width: 280px;">
-      <input id="limit" type="number" min="1" max="2000" value="200" />
-      <button id="loadBtn">Load Logs</button>
-      <button id="refreshBtn" title="Reload from Sheets">Refresh</button>
-      <button id="clearBtn" title="Clear loaded data">Clear</button>
-    </div>
-
-    <!-- Filter & sort controls -->
-    <div class="row">
-      <select id="actionFilter">
-        <option value="ALL">Action: All</option>
-        <option value="TIME IN">TIME IN</option>
-        <option value="TIME OUT">TIME OUT</option>
-      </select>
-
-      <label style="font-size:13px;color:#444;">From</label>
-      <input id="dateFrom" type="date" />
-      <label style="font-size:13px;color:#444;">To</label>
-      <input id="dateTo" type="date" />
-
-      <input id="searchText" placeholder="Search (name/action/timestamp)" style="min-width: 260px; flex: 1;" />
-
-      <select id="sortMode">
-        <option value="TS_DESC">Sort: Newest</option>
-        <option value="TS_ASC">Sort: Oldest</option>
-        <option value="ACT_ASC">Sort: Action A→Z</option>
-        <option value="ACT_DESC">Sort: Action Z→A</option>
-      </select>
-
-      <button id="applyBtn">Apply</button>
-      <button id="resetBtn">Reset Filters</button>
-    </div>
-
-    <div id="mainMsg"></div>
-
-    <table id="tbl" class="hidden">
-      <thead>
-        <tr>
-          <th data-col="name">Name <span class="hint">(click to sort)</span></th>
-          <th data-col="action">Action <span class="hint">(click to sort)</span></th>
-          <th data-col="timestamp">Timestamp <span class="hint">(click to sort)</span></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-
-    <div class="row" style="margin-top:12px;">
-      <button id="logoutBtn">Logout</button>
-      <button id="backBtn">Back to Time Tracker</button>
-    </div>
+  <!-- LOAD LOGS -->
+  <div class="row">
+    <input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width:260px;">
+    <input id="limit" type="number" min="1" max="2000" value="200" />
+    <button id="loadBtn">Load Logs</button>
   </div>
+
+  <!-- FILTERS -->
+  <div class="row">
+    <select id="actionFilter">
+      <option value="ALL">All Actions</option>
+      <option value="TIME IN">TIME IN</option>
+      <option value="TIME OUT">TIME OUT</option>
+    </select>
+
+    <input id="dateFrom" type="date" />
+    <input id="dateTo" type="date" />
+
+    <input id="searchText" placeholder="Search..." style="min-width:200px;" />
+
+    <select id="sortMode">
+      <option value="TS_DESC">Newest</option>
+      <option value="TS_ASC">Oldest</option>
+      <option value="ACT_ASC">Action A→Z</option>
+      <option value="ACT_DESC">Action Z→A</option>
+    </select>
+
+    <button id="applyBtn">Apply</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <!-- SALARY CALCULATION -->
+  <div class="row">
+    <input id="from" type="date" />
+    <input id="to" type="date" />
+    <input id="dailyRate" type="number" step="0.01" placeholder="Daily rate" />
+    <input id="otRate" type="number" step="0.01" placeholder="Overtime rate / hour" />
+    <button id="calcBtn">Calculate Salary</button>
+  </div>
+
+  <div id="mainMsg"></div>
+
+  <table id="tbl" class="hidden">
+    <thead>
+      <tr>
+        <th data-col="name">Name</th>
+        <th data-col="action">Action</th>
+        <th data-col="timestamp">Timestamp</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="row" style="margin-top:12px;">
+    <button id="logoutBtn">Logout</button>
+    <button id="backBtn">Back to Time Tracker</button>
+  </div>
+</div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbz52CgThDKGILFRLolyRleu5jnRgo3ybwxkfxB6ldlnW4NM6uBsm9KCn-xk2X2GdIK-tQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz52CgThDKGILFRLolyRleu5jnRgo3ybwxkfxB6ldlnW4NM6uBsm9KCn-xk2X2GdIK-tQ/exec";
 
-  let token = localStorage.getItem("tt_token") || null;
-  let myName = localStorage.getItem("tt_fullName") || null;
-  let myRole = localStorage.getItem("tt_role") || null;
+let token = localStorage.getItem("tt_token") || null;
+let myName = localStorage.getItem("tt_fullName") || null;
+let myRole = localStorage.getItem("tt_role") || null;
 
-  // Raw rows from Sheets after GET_LOGS
-  // Each row is [Name, Action, Timestamp]
-  let allRows = [];
+let allRows = [];
+let headerSort = { col: null, dir: "ASC" };
 
-  // Current table sort via header clicks
-  let headerSort = { col: null, dir: "ASC" }; // dir: ASC/DESC
+function setMsg(id, text, cls){
+  const el = document.getElementById(id);
+  el.className = cls;
+  el.textContent = text || "";
+}
 
-  function setMsg(id, text, cls){
-    const el = document.getElementById(id);
-    el.className = cls;
-    el.textContent = text || "";
-  }
-
-  function setStats(){
-    const shown = document.querySelectorAll("#tbody tr").length;
-    document.getElementById("statsPill").textContent = `Rows: ${shown} / ${allRows.length}`;
-  }
-
-  async function api(payload){
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-    });
-
-    const text = await res.text();
-
-    let data;
-    try { data = JSON.parse(text); }
-    catch {
-      throw new Error("Non-JSON response from Apps Script. First 200 chars:\n" + text.slice(0, 200));
-    }
-
-    if (!data.ok) throw new Error(data.error || "Request failed");
-    return data;
-  }
-
-  function parseTS(ts){
-    // Expect "YYYY-MM-DD HH:MM:SS" from backend
-    // If it's already a Date string, fallback to Date.parse.
-    const s = String(ts || "").trim();
-    const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/.exec(s);
-    if (m) {
-      return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
-    }
-    const t = Date.parse(s);
-    return isNaN(t) ? null : new Date(t);
-  }
-
-  function ymd(d){
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function applyFiltersAndRender(){
-    const actionFilter = document.getElementById("actionFilter").value;
-    const dateFrom = document.getElementById("dateFrom").value; // YYYY-MM-DD
-    const dateTo = document.getElementById("dateTo").value;
-    const search = document.getElementById("searchText").value.trim().toLowerCase();
-    const sortMode = document.getElementById("sortMode").value;
-
-    let rows = allRows.slice();
-
-    // Filter: action
-    if (actionFilter !== "ALL") {
-      rows = rows.filter(r => String(r[1]||"").toUpperCase().trim() === actionFilter);
-    }
-
-    // Filter: date range (based on timestamp date)
-    if (dateFrom) {
-      rows = rows.filter(r => {
-        const dt = parseTS(r[2]);
-        return dt && ymd(dt) >= dateFrom;
-      });
-    }
-    if (dateTo) {
-      rows = rows.filter(r => {
-        const dt = parseTS(r[2]);
-        return dt && ymd(dt) <= dateTo;
-      });
-    }
-
-    // Filter: search text
-    if (search) {
-      rows = rows.filter(r => {
-        const blob = `${r[0]||""} ${r[1]||""} ${r[2]||""}`.toLowerCase();
-        return blob.includes(search);
-      });
-    }
-
-    // Sort: dropdown sort mode (ignored if headerSort.col is set)
-    if (headerSort.col) {
-      const col = headerSort.col;
-      const dir = headerSort.dir;
-
-      rows.sort((a,b) => {
-        let va, vb;
-
-        if (col === "name") { va = String(a[0]||""); vb = String(b[0]||""); }
-        else if (col === "action") { va = String(a[1]||""); vb = String(b[1]||""); }
-        else { // timestamp
-          const da = parseTS(a[2]); const db = parseTS(b[2]);
-          va = da ? da.getTime() : -Infinity;
-          vb = db ? db.getTime() : -Infinity;
-        }
-
-        if (va < vb) return dir === "ASC" ? -1 : 1;
-        if (va > vb) return dir === "ASC" ? 1 : -1;
-        return 0;
-      });
-    } else {
-      // default sort by dropdown
-      rows.sort((a,b) => {
-        if (sortMode === "TS_DESC" || sortMode === "TS_ASC") {
-          const da = parseTS(a[2]); const db = parseTS(b[2]);
-          const ta = da ? da.getTime() : -Infinity;
-          const tb = db ? db.getTime() : -Infinity;
-          return sortMode === "TS_DESC" ? (tb - ta) : (ta - tb);
-        }
-        if (sortMode === "ACT_ASC" || sortMode === "ACT_DESC") {
-          const aa = String(a[1]||""); const ab = String(b[1]||"");
-          if (aa < ab) return sortMode === "ACT_ASC" ? -1 : 1;
-          if (aa > ab) return sortMode === "ACT_ASC" ? 1 : -1;
-          return 0;
-        }
-        return 0;
-      });
-    }
-
-    renderTable(rows);
-  }
-
-  function renderTable(rows){
-    const tbody = document.getElementById("tbody");
-    tbody.innerHTML = "";
-
-    for (const r of rows) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${escapeHtml(r[0]||"")}</td><td>${escapeHtml(r[1]||"")}</td><td>${escapeHtml(r[2]||"")}</td>`;
-      tbody.appendChild(tr);
-    }
-
-    document.getElementById("tbl").classList.toggle("hidden", rows.length === 0);
-    setStats();
-  }
-
-  function escapeHtml(s){
-    return String(s)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-
-  async function loadLogs(){
-    setMsg("mainMsg", "", "err");
-    try {
-      const fullName = document.getElementById("fullName").value;
-      const limit = Number(document.getElementById("limit").value || 200);
-
-      const out = await api({ action: "GET_LOGS", token, fullName, limit });
-
-      allRows = Array.isArray(out.rows) ? out.rows : [];
-      headerSort = { col: null, dir: "ASC" }; // reset header sort on reload
-
-      // Default view: newest
-      document.getElementById("sortMode").value = "TS_DESC";
-
-      applyFiltersAndRender();
-      setMsg("mainMsg", `Loaded ${allRows.length} rows for: ${out.fullName}`, "ok");
-    } catch (e) {
-      setMsg("mainMsg", e.message, "err");
-    }
-  }
-
-  function clearData(){
-    allRows = [];
-    headerSort = { col: null, dir: "ASC" };
-    document.getElementById("tbody").innerHTML = "";
-    document.getElementById("tbl").classList.add("hidden");
-    setMsg("mainMsg", "Cleared loaded logs.", "ok");
-    setStats();
-  }
-
-  function resetFilters(){
-    document.getElementById("actionFilter").value = "ALL";
-    document.getElementById("dateFrom").value = "";
-    document.getElementById("dateTo").value = "";
-    document.getElementById("searchText").value = "";
-    document.getElementById("sortMode").value = "TS_DESC";
-    headerSort = { col: null, dir: "ASC" };
-    applyFiltersAndRender();
-  }
-
-  // Header click sorting
-  document.querySelectorAll("th[data-col]").forEach(th => {
-    th.addEventListener("click", () => {
-      const col = th.getAttribute("data-col");
-      if (headerSort.col === col) {
-        headerSort.dir = (headerSort.dir === "ASC") ? "DESC" : "ASC";
-      } else {
-        headerSort.col = col;
-        headerSort.dir = "ASC";
-      }
-      applyFiltersAndRender();
-    });
+async function api(payload){
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
   });
 
-  // Buttons
-  document.getElementById("loadBtn").onclick = loadLogs;
-  document.getElementById("refreshBtn").onclick = loadLogs;
-  document.getElementById("clearBtn").onclick = clearData;
-  document.getElementById("applyBtn").onclick = applyFiltersAndRender;
-  document.getElementById("resetBtn").onclick = resetFilters;
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(text.slice(0,200)); }
 
-  document.getElementById("backBtn").onclick = () => {
-    window.location.href = "./index.html";
-  };
+  if (!data.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
-  document.getElementById("logoutBtn").onclick = async () => {
-    try { await api({ action: "LOGOUT", token }); } catch(e) {}
+function parseTS(ts){
+  const s = String(ts||"").trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/.exec(s);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+  const t = Date.parse(s);
+  return isNaN(t)?null:new Date(t);
+}
 
-    token = null; myName = null; myRole = null;
-    localStorage.removeItem("tt_token");
-    localStorage.removeItem("tt_fullName");
-    localStorage.removeItem("tt_role");
+function applyFiltersAndRender(){
+  let rows = allRows.slice();
 
-    allRows = [];
-    document.getElementById("mainCard").classList.add("hidden");
-    document.getElementById("loginCard").classList.remove("hidden");
-    setMsg("loginMsg", "", "err");
-    setMsg("mainMsg", "", "err");
-    clearData();
-  };
+  const actionFilter = document.getElementById("actionFilter").value;
+  const dateFrom = document.getElementById("dateFrom").value;
+  const dateTo = document.getElementById("dateTo").value;
+  const search = document.getElementById("searchText").value.toLowerCase();
+  const sortMode = document.getElementById("sortMode").value;
 
-  // Manual login
-  document.getElementById("loginBtn").onclick = async () => {
-    setMsg("loginMsg", "", "err");
-    try {
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-      const out = await api({ action: "LOGIN", username, password });
+  if (actionFilter !== "ALL")
+    rows = rows.filter(r => r[1] === actionFilter);
 
-      token = out.token;
-      myName = out.fullName;
-      myRole = out.role || "user";
+  if (dateFrom)
+    rows = rows.filter(r => {
+      const dt=parseTS(r[2]); 
+      return dt && dt.toISOString().slice(0,10)>=dateFrom;
+    });
 
-      localStorage.setItem("tt_token", token);
-      localStorage.setItem("tt_fullName", myName);
-      localStorage.setItem("tt_role", myRole);
+  if (dateTo)
+    rows = rows.filter(r => {
+      const dt=parseTS(r[2]); 
+      return dt && dt.toISOString().slice(0,10)<=dateTo;
+    });
 
-      document.getElementById("who").textContent = `Logged in as: ${myName} (${myRole})`;
-      document.getElementById("loginCard").classList.add("hidden");
-      document.getElementById("mainCard").classList.remove("hidden");
-      setStats();
-    } catch (e) {
-      setMsg("loginMsg", e.message, "err");
+  if (search)
+    rows = rows.filter(r =>
+      (r[0]+r[1]+r[2]).toLowerCase().includes(search)
+    );
+
+  rows.sort((a,b)=>{
+    if(sortMode==="TS_DESC"||sortMode==="TS_ASC"){
+      const da=parseTS(a[2]), db=parseTS(b[2]);
+      return sortMode==="TS_DESC" ? db-da : da-db;
     }
-  };
+    if(sortMode==="ACT_ASC") return a[1].localeCompare(b[1]);
+    if(sortMode==="ACT_DESC") return b[1].localeCompare(a[1]);
+    return 0;
+  });
 
-  // Auto-login using saved token
-  (async function autoLogin(){
-    if (!token) return;
+  const tbody=document.getElementById("tbody");
+  tbody.innerHTML="";
+  rows.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>`;
+    tbody.appendChild(tr);
+  });
 
-    try {
-      const out = await api({ action: "WHOAMI", token });
-      myName = out.fullName;
-      myRole = out.role || "user";
+  document.getElementById("tbl").classList.toggle("hidden",rows.length===0);
+}
 
-      localStorage.setItem("tt_fullName", myName);
-      localStorage.setItem("tt_role", myRole);
+document.getElementById("loadBtn").onclick=async()=>{
+  try{
+    const fullName=document.getElementById("fullName").value;
+    const limit=Number(document.getElementById("limit").value||200);
+    const out=await api({action:"GET_LOGS",token,fullName,limit});
+    allRows=out.rows||[];
+    applyFiltersAndRender();
+    setMsg("mainMsg","Logs loaded.","ok");
+  }catch(e){setMsg("mainMsg",e.message,"err");}
+};
 
-      document.getElementById("who").textContent = `Logged in as: ${myName} (${myRole})`;
-      document.getElementById("loginCard").classList.add("hidden");
-      document.getElementById("mainCard").classList.remove("hidden");
-      setStats();
-    } catch (e) {
-      // invalid token -> clear and show login
-      localStorage.removeItem("tt_token");
-      localStorage.removeItem("tt_fullName");
-      localStorage.removeItem("tt_role");
-      token = null; myName = null; myRole = null;
-    }
-  })();
+document.getElementById("applyBtn").onclick=applyFiltersAndRender;
+document.getElementById("resetBtn").onclick=()=>{
+  document.getElementById("actionFilter").value="ALL";
+  document.getElementById("dateFrom").value="";
+  document.getElementById("dateTo").value="";
+  document.getElementById("searchText").value="";
+  document.getElementById("sortMode").value="TS_DESC";
+  applyFiltersAndRender();
+};
+
+document.getElementById("calcBtn").onclick=async()=>{
+  try{
+    const fullName=document.getElementById("fullName").value;
+    const from=document.getElementById("from").value;
+    const to=document.getElementById("to").value;
+    const dailyRate=Number(document.getElementById("dailyRate").value);
+    const otRate=Number(document.getElementById("otRate").value);
+
+    const out=await api({
+      action:"CALC_PAYROLL_SHIFT",
+      token,fullName,from,to,dailyRate,otRate
+    });
+
+    setMsg("mainMsg",
+      `Payroll ${out.from} to ${out.to}\nDays Paid: ${out.daysPaid}\nOvertime: ${out.overtimeHours}\nTotal Pay: ${out.totalPay}`,
+      "ok"
+    );
+  }catch(e){setMsg("mainMsg",e.message,"err");}
+};
+
+document.getElementById("loginBtn").onclick=async()=>{
+  try{
+    const username=document.getElementById("username").value;
+    const password=document.getElementById("password").value;
+    const out=await api({action:"LOGIN",username,password});
+    token=out.token; myName=out.fullName; myRole=out.role||"user";
+    localStorage.setItem("tt_token",token);
+    localStorage.setItem("tt_fullName",myName);
+    localStorage.setItem("tt_role",myRole);
+    document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("mainCard").classList.remove("hidden");
+  }catch(e){setMsg("loginMsg",e.message,"err");}
+};
+
+document.getElementById("logoutBtn").onclick=async()=>{
+  try{await api({action:"LOGOUT",token});}catch(e){}
+  localStorage.clear();
+  location.reload();
+};
+
+document.getElementById("backBtn").onclick=()=>window.location.href="./index.html";
+
+(async function autoLogin(){
+  if(!token)return;
+  try{
+    const out=await api({action:"WHOAMI",token});
+    myName=out.fullName; myRole=out.role||"user";
+    document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("mainCard").classList.remove("hidden");
+  }catch(e){
+    localStorage.clear();
+  }
+})();
 </script>
 </body>
 </html>
