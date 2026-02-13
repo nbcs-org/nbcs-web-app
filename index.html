@@ -34,6 +34,7 @@
 
     <button id="timeInBtn">Time In</button>
     <button id="timeOutBtn">Time Out</button>
+    <button id="adminBtn">Attendance Viewer</button>
     <button id="logoutBtn" style="margin-top:14px;">Logout</button>
 
     <div id="mainMsg"></div>
@@ -111,6 +112,12 @@
   document.getElementById("timeInBtn").addEventListener("click", () => punch("TIME IN"));
   document.getElementById("timeOutBtn").addEventListener("click", () => punch("TIME OUT"));
 
+  document.getElementById("adminBtn").addEventListener("click", () => {
+  // same repo, so admin.html is next to index.html
+  window.location.href = "./admin.html";
+  });
+
+  
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     try { await api({ action: "LOGOUT", token }); } catch(e) {}
     token = null; fullName = null;
