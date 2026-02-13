@@ -134,6 +134,32 @@
     document.getElementById("loginMsg").textContent = "";
     document.getElementById("mainMsg").textContent = "";
   });
+
+  async function whoamiOrLogout(){
+  const t = localStorage.getItem("tt_token");
+  if (!t) return false;
+
+  try {
+    const out = await api({ action: "WHOAMI", token: t });
+    token = t;
+    fullName = out.fullName;
+
+    document.getElementById("welcome").textContent = `Hi, ${fullName}`;
+    loginCard.classList.add("hidden");
+    mainCard.classList.remove("hidden");
+    return true;
+  } catch {
+    localStorage.removeItem("tt_token");
+    localStorage.removeItem("tt_fullName");
+    localStorage.removeItem("tt_role");
+    token = null; fullName = null;
+    return false;
+  }
+  }
+  
+  // call once on page load
+  whoamiOrLogout();
+
   
   (function restoreSession(){
   const t = localStorage.getItem("tt_token");
