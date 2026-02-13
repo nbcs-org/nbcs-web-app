@@ -85,6 +85,10 @@
       const out = await api({ action: "LOGIN", username, password });
       token = out.token;
       fullName = out.fullName;
+      
+      localStorage.setItem("tt_token", token);
+      localStorage.setItem("tt_fullName", fullName);
+      localStorage.setItem("tt_role", out.role || "user");
 
       document.getElementById("welcome").textContent = `Hi, ${fullName}`;
       loginCard.classList.add("hidden");
@@ -113,11 +117,31 @@
 
     mainCard.classList.add("hidden");
     loginCard.classList.remove("hidden");
+
+    localStorage.removeItem("tt_token");
+    localStorage.removeItem("tt_fullName");
+    localStorage.removeItem("tt_role");
+    
     document.getElementById("username").value = "";
     document.getElementById("password").value = "";
     document.getElementById("loginMsg").textContent = "";
     document.getElementById("mainMsg").textContent = "";
   });
+  
+  (function restoreSession(){
+  const t = localStorage.getItem("tt_token");
+  const n = localStorage.getItem("tt_fullName");
+
+  if (t && n) {
+    token = t;
+    fullName = n;
+    document.getElementById("welcome").textContent = `Hi, ${fullName}`;
+    loginCard.classList.add("hidden");
+    mainCard.classList.remove("hidden");
+  }
+})();
+
+  
 </script>
 </body>
 </html>
