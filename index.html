@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NBCS Time Tracker</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 18px; }
+    .row { display: flex; gap: 10px; margin: 10px 0; }
+    input { flex: 1; padding: 10px; font-size: 14px; }
+    button { padding: 10px 12px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px; }
+    .big { font-size: 44px; font-weight: 700; text-align: center; margin: 10px 0 0; }
+    .mid { font-size: 16px; font-weight: 700; text-align: center; margin: 0 0 16px; }
+    .muted { color: #777; font-size: 12px; text-align: center; margin-top: 14px; }
+    .hidden { display: none; }
+    .err { color: #b00020; margin-top: 10px; }
+    .ok { color: #0a7a2f; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="loginCard">
+    <h2>Login</h2>
+    <div class="row"><input id="username" placeholder="Username" autocomplete="username"></div>
+    <div class="row"><input id="password" placeholder="Password" type="password" autocomplete="current-password"></div>
+    <button id="loginBtn">Login</button>
+    <div id="loginMsg" class="err"></div>
+  </div>
+
+  <div class="card hidden" id="mainCard">
+    <h2 id="welcome"></h2>
+    <div class="big" id="time">00:00:00</div>
+    <div class="mid" id="date">0000-00-00</div>
+
+    <button id="timeInBtn">Time In</button>
+    <button id="timeOutBtn">Time Out</button>
+    <button id="logoutBtn" style="margin-top:14px;">Logout</button>
+
+    <div id="mainMsg"></div>
+    <div class="muted">v1.0.0</div>
+  </div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbz52CgThDKGILFRLolyRleu5jnRgo3ybwxkfxB6ldlnW4NM6uBsm9KCn-xk2X2GdIK-tQ/exec"; // <-- paste your /exec URL here
+
+  let token = null;
+  let fullName = null;
+
+  const loginCard = document.getElementById("loginCard");
+  const mainCard = document.getElementById("mainCard");
+
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function updateClock(){
+    const now = new Date();
+    document.getElementById("time").textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    document.getElementById("date").textContent =
+      `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  function setMsg(el, text, cls){
+    el.className = cls;
+    el.textContent = text || "";
+  }
+
+  async function api(payload){
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // Apps Script-friendly
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) throw new Error(data.error || "Request failed");
+    return data;
+  }
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    setMsg(document.getElementById("loginMsg"), "", "err");
+    try {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      const out = await api({ action: "LOGIN", username, password });
+      token = out.token;
+      fullName = out.fullName;
+
+      document.getElementById("welcome").textContent = `Hi, ${fullName}`;
+      loginCard.classList.add("hidden");
+      mainCard.classList.remove("hidden");
+    } catch (e) {
+      setMsg(document.getElementById("loginMsg"), e.message, "err");
+    }
+  });
+
+  async function punch(p){
+    setMsg(document.getElementById("mainMsg"), "", "err");
+    try {
+      const out = await api({ action: "PUNCH", token, punch: p });
+      setMsg(document.getElementById("mainMsg"), `Saved: ${out.row.join(" | ")}`, "ok");
+    } catch (e) {
+      setMsg(document.getElementById("mainMsg"), e.message, "err");
+    }
+  }
+
+  document.getElementById("timeInBtn").addEventListener("click", () => punch("TIME IN"));
+  document.getElementById("timeOutBtn").addEventListener("click", () => punch("TIME OUT"));
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    try { await api({ action: "LOGOUT", token }); } catch(e) {}
+    token = null; fullName = null;
+
+    mainCard.classList.add("hidden");
+    loginCard.classList.remove("hidden");
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("loginMsg").textContent = "";
+    document.getElementById("mainMsg").textContent = "";
+  });
+</script>
+</body>
+</html>
