@@ -21,6 +21,10 @@ table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
 th { cursor: pointer; user-select: none; }
 .spacer { flex: 1; }
+tr.dayA td { background: #fafafa; }
+tr.dayB td { background: #ffffff; }
+</style>
+
 </style>
 </head>
 
@@ -180,13 +184,28 @@ function applyFiltersAndRender(){
     return 0;
   });
 
-  const tbody=document.getElementById("tbody");
-  tbody.innerHTML="";
-  rows.forEach(r=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>`;
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  
+  // Group-color by date (YYYY-MM-DD), alternating A/B per day
+  let lastDay = null;
+  let dayFlip = false;
+  
+  rows.forEach(r => {
+    const ts = String(r[2] || "");
+    const day = ts.slice(0, 10); // "YYYY-MM-DD" from "YYYY-MM-DD HH:MM:SS"
+  
+    if (day && day !== lastDay) {
+      dayFlip = !dayFlip;
+      lastDay = day;
+    }
+  
+    const tr = document.createElement("tr");
+    tr.className = dayFlip ? "dayA" : "dayB";
+    tr.innerHTML = `<td>${r[0]||""}</td><td>${r[1]||""}</td><td>${r[2]||""}</td>`;
     tbody.appendChild(tr);
   });
+
 
   document.getElementById("tbl").classList.toggle("hidden",rows.length===0);
 }
