@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Attendance Viewer</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+    input, select { padding: 10px; font-size: 14px; }
+    button { padding: 10px 12px; font-size: 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
+    .err { color: #b00020; margin-top: 10px; }
+    .ok { color: #0a7a2f; margin-top: 10px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card" id="loginCard">
+    <h2>Login</h2>
+    <div class="row">
+      <input id="username" placeholder="Username" />
+      <input id="password" placeholder="Password" type="password" />
+      <button id="loginBtn">Login</button>
+    </div>
+    <div id="loginMsg" class="err"></div>
+  </div>
+
+  <div class="card hidden" id="mainCard">
+    <h2 id="who"></h2>
+
+    <div class="row">
+      <input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width: 260px;">
+      <input id="limit" type="number" min="1" max="2000" value="200" />
+      <button id="loadBtn">Load Logs</button>
+    </div>
+
+    <div class="row">
+      <input id="from" type="date" />
+      <input id="to" type="date" />
+      <input id="rate" type="number" step="0.01" placeholder="Rate per hour" />
+      <button id="calcBtn">Calculate Salary</button>
+    </div>
+
+    <div id="mainMsg"></div>
+
+    <table id="tbl" class="hidden">
+      <thead>
+        <tr><th>Name</th><th>Action</th><th>Timestamp</th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+<script>
+  const API_URL = "YOUR_SCRIPT_WEBAPP_URL"; // same /exec URL
+
+  let token = null;
+  let myName = null;
+
+  function setMsg(el, text, cls){
+    el.className = cls;
+    el.textContent = text || "";
+  }
+
+  async function api(payload){
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) throw new Error(data.error || "Request failed");
+    return data;
+  }
+
+  document.getElementById("loginBtn").onclick = async () => {
+    const msg = document.getElementById("loginMsg");
+    setMsg(msg, "", "err");
+    try {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const out = await api({ action: "LOGIN", username, password });
+      token = out.token;
+      myName = out.fullName;
+
+      document.getElementById("who").textContent = `Logged in as: ${myName}`;
+      document.getElementById("loginCard").classList.add("hidden");
+      document.getElementById("mainCard").classList.remove("hidden");
+    } catch (e) {
+      setMsg(msg, e.message, "err");
+    }
+  };
+
+  document.getElementById("loadBtn").onclick = async () => {
+    const msg = document.getElementById("mainMsg");
+    setMsg(msg, "", "err");
+    try {
+      const fullName = document.getElementById("fullName").value;
+      const limit = Number(document.getElementById("limit").value || 200);
+
+      const out = await api({ action: "GET_LOGS", token, fullName, limit });
+
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      for (const r of out.rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r[0]||""}</td><td>${r[1]||""}</td><td>${r[2]||""}</td>`;
+        tbody.appendChild(tr);
+      }
+      document.getElementById("tbl").classList.remove("hidden");
+      setMsg(msg, `Loaded ${out.rows.length} rows for: ${out.fullName}`, "ok");
+    } catch (e) {
+      setMsg(msg, e.message, "err");
+    }
+  };
+
+  document.getElementById("calcBtn").onclick = async () => {
+    const msg = document.getElementById("mainMsg");
+    setMsg(msg, "", "err");
+    try {
+      const fullName = document.getElementById("fullName").value;
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      const rate = Number(document.getElementById("rate").value);
+
+      const out = await api({ action: "CALC_PAYROLL", token, fullName, from, to, rate });
+
+      setMsg(
+        msg,
+        `Payroll for ${out.fullName} (${out.from} to ${out.to}): Hours=${out.totalHours}, Salary=${out.salary}`,
+        "ok"
+      );
+    } catch (e) {
+      setMsg(msg, e.message, "err");
+    }
+  };
+
+  document.getElementById("logoutBtn").onclick = () => {
+    token = null; myName = null;
+    document.getElementById("mainCard").classList.add("hidden");
+    document.getElementById("loginCard").classList.remove("hidden");
+    document.getElementById("loginMsg").textContent = "";
+    document.getElementById("mainMsg").textContent = "";
+    document.getElementById("tbl").classList.add("hidden");
+  };
+</script>
+</body>
+</html>
