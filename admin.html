@@ -81,8 +81,6 @@ tr.dayA td, tr.dayB td { background-clip: padding-box; }
 
   <!-- SALARY CALCULATION -->
   <div class="row">
-    <input id="from" type="date" />
-    <input id="to" type="date" />
     <input id="dailyRate" type="number" step="0.01" placeholder="Daily rate" />
     <input id="otRate" type="number" step="0.01" placeholder="Overtime rate / hour" />
     <button id="calcBtn">Calculate Salary</button>
@@ -236,8 +234,13 @@ document.getElementById("resetBtn").onclick=()=>{
 document.getElementById("calcBtn").onclick=async()=>{
   try{
     const fullName=document.getElementById("fullName").value;
-    const from=document.getElementById("from").value;
-    const to=document.getElementById("to").value;
+
+    // Use the same date filters as logs
+    const from=document.getElementById("dateFrom").value;
+    const to=document.getElementById("dateTo").value;
+
+    if (!from || !to) throw new Error("Please set Date From and Date To first.");
+
     const dailyRate=Number(document.getElementById("dailyRate").value);
     const otRate=Number(document.getElementById("otRate").value);
 
@@ -252,6 +255,7 @@ document.getElementById("calcBtn").onclick=async()=>{
     );
   }catch(e){setMsg("mainMsg",e.message,"err");}
 };
+
 
 document.getElementById("loginBtn").onclick=async()=>{
   try{
