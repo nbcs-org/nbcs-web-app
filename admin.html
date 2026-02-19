@@ -160,16 +160,16 @@ function applyFiltersAndRender(){
     rows = rows.filter(r => r[1] === actionFilter);
 
   if (dateFrom)
-    rows = rows.filter(r => {
-      const dt=parseTS(r[2]); 
-      return dt && dt.toISOString().slice(0,10)>=dateFrom;
-    });
+  rows = rows.filter(r => {
+    const day = String(r[2] || "").slice(0, 10); // YYYY-MM-DD
+    return day && day >= dateFrom;
+  });
 
   if (dateTo)
     rows = rows.filter(r => {
-      const dt=parseTS(r[2]); 
-      return dt && dt.toISOString().slice(0,10)<=dateTo;
-    });
+      const day = String(r[2] || "").slice(0, 10); // YYYY-MM-DD
+      return day && day <= dateTo;
+  });
 
   if (search)
     rows = rows.filter(r =>
