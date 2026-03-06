@@ -50,7 +50,17 @@ tr.dayA td, tr.dayB td { background-clip: padding-box; }
 
   <!-- LOAD LOGS -->
   <div class="row">
-    <input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width:260px;">
+    <!--<input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width:260px;">-->
+    <select id="fullName" style="min-width:260px;">
+      <option value="">Select employee</option>
+      <option value="Kharla G. Tejada">Kharla G. Tejada</option>
+      <option value="Gilsa Jade Roa">Gilsa Jade Roa</option>
+      <option value="Eina Marrie Nebit">Eina Marrie Nebit</option>
+      <option value="Jazelle Jane Viva">Jazelle Jane Viva</option>
+      <option value="Jude Timothy Joshua Bomban">Jude Timothy Joshua Bomban</option>
+      <option value="Kathleen Marie Majan">Kathleen Marie Majan</option>
+      <option value="Mercedes Banogon">Mercedes Banogon</option>
+    </select>
     <input id="limit" type="number" min="1" max="2000" value="200" />
     <button id="loadBtn">Load Logs</button>
   </div>
@@ -119,6 +129,16 @@ function setMsg(id, text, cls){
   const el = document.getElementById(id);
   el.className = cls;
   el.textContent = text || "";
+}
+
+function configureEmployeeField(){
+  const field = document.GetElementById("fullName");
+  if(myRole !== "admin"){
+    field.value = myName;
+    field.disabled = true;
+  }
+  if(myRole === "admin" && !field.value){
+    field.selectedIndex = 1;
 }
 
 async function api(payload){
@@ -269,6 +289,7 @@ document.getElementById("loginBtn").onclick=async()=>{
     document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
+    configureEmployeeField();
   }catch(e){setMsg("loginMsg",e.message,"err");}
 };
 
@@ -288,6 +309,7 @@ document.getElementById("backBtn").onclick=()=>window.location.href="./index.htm
     document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
+    configureEmployeeField();
   }catch(e){
     localStorage.clear();
   }
