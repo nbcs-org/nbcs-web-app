@@ -134,14 +134,14 @@ function setMsg(id, text, cls){
 function configureEmployeeField(){
   const field = document.getElementById("fullName");
 
-  if (myRole !== "admin") {
-    field.value = myName;
-    field.disabled = true;
-  } else {
+  if (["admin","owner","officer"].includes(myRole)) {
     field.disabled = false;
-    if (!field.value) {
+    if (!field.value){
       field.selectedIndex = 1;
     }
+  } else {
+    field.value = myName || "";
+    field.disabled = true;
   }
 }
 
