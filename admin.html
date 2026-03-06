@@ -136,6 +136,7 @@ function configureEmployeeField(){
 
   if (["admin","owner","officer"].includes(myRole)) {
     field.disabled = false;
+    field.value = myName || "";
     if (!field.value){
       field.selectedIndex = 1;
     }
