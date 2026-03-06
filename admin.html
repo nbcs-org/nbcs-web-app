@@ -132,13 +132,17 @@ function setMsg(id, text, cls){
 }
 
 function configureEmployeeField(){
-  const field = document.GetElementById("fullName");
-  if(myRole !== "admin"){
+  const field = document.getElementById("fullName");
+
+  if (myRole !== "admin") {
     field.value = myName;
     field.disabled = true;
+  } else {
+    field.disabled = false;
+    if (!field.value) {
+      field.selectedIndex = 1;
+    }
   }
-  if(myRole === "admin" && !field.value){
-    field.selectedIndex = 1;
 }
 
 async function api(payload){
