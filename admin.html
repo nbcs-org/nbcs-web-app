@@ -296,6 +296,7 @@ document.getElementById("loginBtn").onclick=async()=>{
     document.getElementById("mainCard").classList.remove("hidden");
     configureEmployeeField();
     setDefaultCutoffDates();
+    document.getElementById("loadBtn").click();
   }catch(e){setMsg("loginMsg",e.message,"err");}
 };
 
@@ -350,6 +351,7 @@ function setDefaultCutoffDates(){
     document.getElementById("mainCard").classList.remove("hidden");
     configureEmployeeField();
     setDefaultCutoffDates();
+    document.getElementById("loadBtn").click();
   }catch(e){
     localStorage.clear();
   }
