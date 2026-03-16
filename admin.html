@@ -295,6 +295,7 @@ document.getElementById("loginBtn").onclick=async()=>{
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
     configureEmployeeField();
+    setDefaultCutoffDates();
   }catch(e){setMsg("loginMsg",e.message,"err");}
 };
 
@@ -306,6 +307,39 @@ document.getElementById("logoutBtn").onclick=async()=>{
 
 document.getElementById("backBtn").onclick=()=>window.location.href="./index.html";
 
+function setDefaultCutoffDates(){
+  const fromEl = document.getElementById("dateFrom");
+  const toEl = document.getElementById("dateTo");
+
+  // Do nothing if user already set either date
+  if (fromEl.value || toEl.value) return;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-based
+  const day = now.getDate();
+
+  let fromDate, toDate;
+
+  if (day <= 15) {
+    fromDate = new Date(year, month, 1);
+    toDate = new Date(year, month, 15);
+  } else {
+    fromDate = new Date(year, month, 16);
+    toDate = new Date(year, month + 1, 0); // last day of current month
+  }
+
+  const fmt = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  fromEl.value = fmt(fromDate);
+  toEl.value = fmt(toDate);
+}
+  
 (async function autoLogin(){
   if(!token)return;
   try{
@@ -315,6 +349,7 @@ document.getElementById("backBtn").onclick=()=>window.location.href="./index.htm
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
     configureEmployeeField();
+    setDefaultCutoffDates();
   }catch(e){
     localStorage.clear();
   }
