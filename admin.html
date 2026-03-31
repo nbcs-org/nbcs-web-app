@@ -237,7 +237,14 @@ function applyFiltersAndRender(){
 
 document.getElementById("loadBtn").onclick=async()=>{
   try{
-    const fullName=["admin","owner","officer"].includes(myRole) ? document.getElementbyId("fullName").value : myName;
+    let fullName;
+
+    if (["admin","owner","officer"].includeds(myRole)){
+      fullName=document.getElementById("fullName").value;
+    }else{
+      fullname = myName;
+    }
+    
     const limit=Number(document.getElementById("limit").value||200);
     
     console.log("Full name: ", fullName);
@@ -263,7 +270,13 @@ document.getElementById("resetBtn").onclick=()=>{
 
 document.getElementById("calcBtn").onclick=async()=>{
   try{
-    const fullName=["admin","owner","officer"].includes(myRole) ? document.getElementbyId("fullName").value : myName;
+    let fullName;
+
+    if (["admin","owner","officer"].includeds(myRole)){
+      fullName=document.getElementById("fullName").value;
+    }else{
+      fullname = myName;
+    }
 
     // Use the same date filters as logs
     const from=document.getElementById("dateFrom").value;
