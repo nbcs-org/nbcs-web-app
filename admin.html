@@ -239,6 +239,11 @@ document.getElementById("loadBtn").onclick=async()=>{
   try{
     const fullName=document.getElementById("fullName").value;
     const limit=Number(document.getElementById("limit").value||200);
+    
+    console.log("Full name: ", fullName);
+    console.log("Role: ", myRole);
+    console.log("Logged user: ", myName);
+    
     const out=await api({action:"GET_LOGS",token,fullName,limit});
     allRows=out.rows||[];
     applyFiltersAndRender();
