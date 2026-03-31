@@ -138,8 +138,10 @@ function configureEmployeeField(){
       field.selectedIndex = 1;
     }
   } else {
-    field.style.display = "none";
+    field.disabled = false;
     field.value = myName || "";
+    if (!field.value){
+      field.selectedIndex = 1;
   }
 }
 
@@ -221,7 +223,7 @@ function applyFiltersAndRender(){
 
 document.getElementById("loadBtn").onclick=async()=>{
   try{
-    const fullName = (["admin","owner","officer"].includes(myRole)) ? document.getElementById("fullName").value : myName;
+    const fullName = document.getElementById("fullName").value;
     if (!fullName) throw new Error("No employee selected");
     const limit=Number(document.getElementById("limit").value||200);
 
@@ -248,8 +250,8 @@ document.getElementById("resetBtn").onclick=()=>{
 
 document.getElementById("calcBtn").onclick=async()=>{
   try{
-    const fullName = (["admin","owner","officer"].includes(myRole)) ? document.getElementById("fullName").value : myName;
-    if (!fullName) throw new Error("No employee selected");
+    const fullName = document.getElementById("fullName").value;
+    
 
     const from=document.getElementById("dateFrom").value;
     const to=document.getElementById("dateTo").value;
