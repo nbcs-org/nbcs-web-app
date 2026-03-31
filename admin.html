@@ -141,8 +141,9 @@ function configureEmployeeField(){
       field.selectedIndex = 1;
     }
   } else {
-    field.value = myName || "";
     field.disabled = true;
+    field.value = myName;
+    
   }
 }
 
@@ -238,7 +239,7 @@ function applyFiltersAndRender(){
 document.getElementById("loadBtn").onclick=async()=>{
   try{
     const fullName =
-      ["admin","owner","officer"].includes(myRole)
+      (["admin","owner","officer"].includes(myRole))
         ? document.getElementById("fullName").value
         : myName;
     if (!fullName) throw new Error("No employee selected");
@@ -269,7 +270,7 @@ document.getElementById("resetBtn").onclick=()=>{
 document.getElementById("calcBtn").onclick=async()=>{
   try{
     const fullName =
-      ["admin","owner","officer"].includes(myRole)
+      (["admin","owner","officer"].includes(myRole))
         ? document.getElementById("fullName").value
         : myName;
     if (!fullName) throw new Error("No employee selected");
