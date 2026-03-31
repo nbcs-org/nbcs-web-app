@@ -21,8 +21,10 @@ table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-size: 13px; }
 th { cursor: pointer; user-select: none; }
 .spacer { flex: 1; }
+
 tr.dayA td { background: #d0e0e3; }  
 tr.dayB td { background: #ffffff; }
+
 tr.dayA td, tr.dayB td { background-clip: padding-box; }
 </style>
 </head>
@@ -57,9 +59,6 @@ tr.dayA td, tr.dayB td { background-clip: padding-box; }
       <option value="Kathleen Marie Majan">Kathleen Marie Majan</option>
       <option value="Mercedes Banogon">Mercedes Banogon</option>
     </select>
-    <!-- Hidden input always holds the real value -->
-    <input type="hidden" id="fullNameHidden">
-    
     <input id="limit" type="number" min="1" max="2000" value="200" />
     <button id="loadBtn">Load Logs</button>
   </div>
@@ -122,6 +121,7 @@ let myName = localStorage.getItem("tt_fullName") || null;
 let myRole = localStorage.getItem("tt_role") || null;
 
 let allRows = [];
+let headerSort = { col: null, dir: "ASC" };
 
 function setMsg(id, text, cls){
   const el = document.getElementById(id);
@@ -129,20 +129,15 @@ function setMsg(id, text, cls){
   el.textContent = text || "";
 }
 
-function configureEmployeeField() {
+function configureEmployeeField(){
   const field = document.getElementById("fullName");
-  const hidden = document.getElementById("fullNameHidden");
-
   if (["admin","owner","officer"].includes(myRole)) {
     field.disabled = false;
     field.value = myName || "";
-    hidden.value = field.value;
-
-    field.onchange = () => hidden.value = field.value;
+    if (!field.value) field.selectedIndex = 1;
   } else {
     field.disabled = true;
     field.value = myName;
-    hidden.value = myName;
   }
 }
 
@@ -172,7 +167,6 @@ function parseTS(ts){
 
 function applyFiltersAndRender(){
   let rows = allRows.slice();
-
   const actionFilter = document.getElementById("actionFilter").value;
   const dateFrom = document.getElementById("dateFrom").value;
   const dateTo = document.getElementById("dateTo").value;
@@ -196,31 +190,39 @@ function applyFiltersAndRender(){
 
   const tbody = document.getElementById("tbody");
   tbody.innerHTML = "";
+  let lastDay = null;
+  let dayFlip = false;
 
-  let lastDay = null, dayFlip = false;
-  rows.forEach(r=>{
+  rows.forEach(r => {
     const day = (r[2]||"").slice(0,10);
-    if(day && day!==lastDay){ dayFlip=!dayFlip; lastDay=day; }
+    if (day && day !== lastDay) { dayFlip = !dayFlip; lastDay = day; }
+
     const tr = document.createElement("tr");
     tr.className = dayFlip ? "dayA" : "dayB";
-    tr.innerHTML = <td>${r[0]||""}</td><td>${r[1]||""}</td><td>${r[2]||""}</td>;
+
+    [0,1,2].forEach(i => {
+      const td = document.createElement("td");
+      td.textContent = r[i] || "";
+      tr.appendChild(td);
+    });
+
     tbody.appendChild(tr);
   });
 
   document.getElementById("tbl").classList.toggle("hidden", rows.length===0);
 }
 
-document.getElementById("loadBtn").onclick = async ()=>{
-  try {
-    const fullName = document.getElementById("fullNameHidden").value;
+// BUTTONS
+document.getElementById("loadBtn").onclick = async()=>{
+  try{
+    const fullName = ["admin","owner","officer"].includes(myRole) ? document.getElementById("fullName").value : myName;
     if (!fullName) throw new Error("No employee selected");
-
     const limit = Number(document.getElementById("limit").value||200);
-    const out = await api({action:"GET_LOGS", token, fullName, limit});
+    const out = await api({action:"GET_LOGS",token,fullName,limit});
     allRows = out.rows || [];
     applyFiltersAndRender();
     setMsg("mainMsg","Logs loaded.","ok");
-  } catch(e){ setMsg("mainMsg", e.message, "err"); }
+  }catch(e){setMsg("mainMsg",e.message,"err");}
 };
 
 document.getElementById("applyBtn").onclick = applyFiltersAndRender;
@@ -233,78 +235,77 @@ document.getElementById("resetBtn").onclick = ()=>{
   applyFiltersAndRender();
 };
 
-document.getElementById("calcBtn").onclick = async ()=>{
-  try {
-    const fullName = document.getElementById("fullNameHidden").value;
+document.getElementById("calcBtn").onclick = async()=>{
+  try{
+    const fullName = ["admin","owner","officer"].includes(myRole) ? document.getElementById("fullName").value : myName;
     if (!fullName) throw new Error("No employee selected");
-
     const from = document.getElementById("dateFrom").value;
     const to = document.getElementById("dateTo").value;
     if (!from || !to) throw new Error("Please set Date From and Date To first.");
-
     const dailyRate = Number(document.getElementById("dailyRate").value);
     const otRate = Number(document.getElementById("otRate").value);
-
-    const out = await api({action:"CALC_PAYROLL_SHIFT", token, fullName, from, to, dailyRate, otRate});
-    setMsg("mainMsg", Payroll ${out.from} to ${out.to}\nDays Paid: ${out.daysPaid}\nOvertime: ${out.overtimeHours}\nTotal Pay: ${out.totalPay}, "ok");
-  } catch(e){ setMsg("mainMsg", e.message, "err"); }
+    const out = await api({action:"CALC_PAYROLL_SHIFT",token,fullName,from,to,dailyRate,otRate});
+    setMsg("mainMsg",`Payroll ${out.from} to ${out.to}\nDays Paid: ${out.daysPaid}\nOvertime: ${out.overtimeHours}\nTotal Pay: ${out.totalPay}`,"ok");
+  }catch(e){setMsg("mainMsg",e.message,"err");}
 };
 
-document.getElementById("loginBtn").onclick = async ()=>{
-  try {
+document.getElementById("loginBtn").onclick = async()=>{
+  try{
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
-    const out = await api({action:"LOGIN", username, password});
+    const out = await api({action:"LOGIN",username,password});
     token = out.token; myName = out.fullName; myRole = out.role||"user";
-    localStorage.setItem("tt_token", token);
-    localStorage.setItem("tt_fullName", myName);
-    localStorage.setItem("tt_role", myRole);
-
+    localStorage.setItem("tt_token",token);
+    localStorage.setItem("tt_fullName",myName);
+    localStorage.setItem("tt_role",myRole);
     document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
-
     configureEmployeeField();
     setDefaultCutoffDates();
     document.getElementById("loadBtn").click();
-  } catch(e){ setMsg("loginMsg", e.message, "err"); }
+  }catch(e){setMsg("loginMsg",e.message,"err");}
 };
 
-document.getElementById("logoutBtn").onclick = async ()=>{
-  try { await api({action:"LOGOUT", token}); } catch(e){}
+document.getElementById("logoutBtn").onclick = async()=>{
+  try{await api({action:"LOGOUT",token});}catch(e){}
   localStorage.clear();
   location.reload();
 };
 
-document.getElementById("backBtn").onclick = ()=> window.location.href="./index.html";
+document.getElementById("backBtn").onclick = ()=>window.location.href="./index.html";
 
 function setDefaultCutoffDates(){
   const fromEl = document.getElementById("dateFrom");
   const toEl = document.getElementById("dateTo");
-  if(fromEl.value || toEl.value) return;
+  if (fromEl.value || toEl.value) return;
 
-  const now = new Date(), year=now.getFullYear(), month=now.getMonth(), day=now.getDate();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
+
   let fromDate, toDate;
+  if (day <= 15) { fromDate = new Date(year,month,1); toDate = new Date(year,month,15); }
+  else { fromDate = new Date(year,month,16); toDate = new Date(year,month+1,0); }
 
-  if(day<=15){ fromDate=new Date(year,month,1); toDate=new Date(year,month,15);}
-  else{ fromDate=new Date(year,month,16); toDate=new Date(year,month+1,0);}
-
-  const fmt = d=> ${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")};
-  fromEl.value=fmt(fromDate); toEl.value=fmt(toDate);
+  const fmt = d => ${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")};
+  fromEl.value = fmt(fromDate);
+  toEl.value = fmt(toDate);
 }
 
 (async function autoLogin(){
   if(!token) return;
-  try {
-    const out = await api({action:"WHOAMI", token});
-    myName=out.fullName; myRole=out.role||"user";
+  try{
+    const out = await api({action:"WHOAMI",token});
+    myName = out.fullName; myRole = out.role||"user";
     document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
     configureEmployeeField();
     setDefaultCutoffDates();
     document.getElementById("loadBtn").click();
-  } catch(e){ localStorage.clear(); }
+  }catch(e){ localStorage.clear(); }
 })();
 </script>
 </body>
