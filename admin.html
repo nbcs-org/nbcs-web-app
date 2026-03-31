@@ -323,6 +323,7 @@ function setDefaultCutoffDates(){
   if(!token)return;
   try{
     const out=await api({action:"WHOAMI",token});
+    console.log("WHOAMI response: ", out);
     myName=out.fullName; myRole=out.role||"user";
     document.getElementById("who").textContent="Logged in as: "+myName+" ("+myRole+")";
     document.getElementById("loginCard").classList.add("hidden");
