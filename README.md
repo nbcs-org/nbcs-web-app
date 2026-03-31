@@ -6,3 +6,9 @@ A simple web app that utilizes Google Sheets as database and Google API as the b
 - Attendance and log viewer for employee and admins with innovative UI.
 - Built-in date and recency filters
 - Salary calculator
+- Always online, hosted in Github Pages with Google Sheets API for backend
+
+## Constraints
+- Developed in a fairly old and slow workstation
+- Zero budget
+- Locked into a public repository
