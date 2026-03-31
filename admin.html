@@ -239,7 +239,7 @@ document.getElementById("loadBtn").onclick=async()=>{
   try{
     let fullName;
 
-    if (["admin","owner","officer"].includeds(myRole)){
+    if (["admin","owner","officer"].includes(myRole)){
       fullName=document.getElementById("fullName").value;
     }else{
       fullname = myName;
@@ -272,7 +272,7 @@ document.getElementById("calcBtn").onclick=async()=>{
   try{
     let fullName;
 
-    if (["admin","owner","officer"].includeds(myRole)){
+    if (["admin","owner","officer"].includes(myRole)){
       fullName=document.getElementById("fullName").value;
     }else{
       fullname = myName;
