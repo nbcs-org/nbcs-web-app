@@ -237,13 +237,11 @@ function applyFiltersAndRender(){
 
 document.getElementById("loadBtn").onclick=async()=>{
   try{
-    let fullName;
-
-    if (["admin","owner","officer"].includes(myRole)){
-      fullName=document.getElementById("fullName").value;
-    }else{
-      fullName = myName;
-    }
+    const fullName =
+      ["admin","owner","officer"].includes(myRole)
+        ? document.getElementById("fullName").value
+        : myName;
+    if (!fullName) throw new Error("No employee selected");
     
     const limit=Number(document.getElementById("limit").value||200);
     
@@ -251,7 +249,7 @@ document.getElementById("loadBtn").onclick=async()=>{
     console.log("Role: ", myRole);
     console.log("Logged user: ", myName);
     
-    const out=await api({action:"GET_LOGS",token,fullName,limit});
+    const out=await api({action:"GET_LOGS",token: token,fullName: String(fullName),limit: limit});
     allRows=out.rows||[];
     applyFiltersAndRender();
     setMsg("mainMsg","Logs loaded.","ok");
@@ -270,13 +268,11 @@ document.getElementById("resetBtn").onclick=()=>{
 
 document.getElementById("calcBtn").onclick=async()=>{
   try{
-    let fullName;
-
-    if (["admin","owner","officer"].includes(myRole)){
-      fullName=document.getElementById("fullName").value;
-    }else{
-      fullName = myName;
-    }
+    const fullName =
+      ["admin","owner","officer"].includes(myRole)
+        ? document.getElementById("fullName").value
+        : myName;
+    if (!fullName) throw new Error("No employee selected");
 
     // Use the same date filters as logs
     const from=document.getElementById("dateFrom").value;
