@@ -22,10 +22,11 @@ th, td { border-bottom: 1px solid #eee; text-align: left; padding: 8px; font-siz
 th { cursor: pointer; user-select: none; }
 .spacer { flex: 1; }
 
-tr.dayA td { background: #d0e0e3; }
+tr.dayA td { background: #d0e0e3; }  
 tr.dayB td { background: #ffffff; }
 
 tr.dayA td, tr.dayB td { background-clip: padding-box; }
+
 </style>
 </head>
 
@@ -49,6 +50,7 @@ tr.dayA td, tr.dayB td { background-clip: padding-box; }
 
   <!-- LOAD LOGS -->
   <div class="row">
+    <!--<input id="fullName" placeholder="Full Name (admin only; optional)" style="min-width:260px;">-->
     <select id="fullName" style="min-width:260px;">
       <option value="">Select employee</option>
       <option value="Kharla G. Tejada">Kharla G. Tejada</option>
@@ -129,29 +131,18 @@ function setMsg(id, text, cls){
   el.textContent = text || "";
 }
 
-/* ----------------------------
-   EMPLOYEE DROPDOWN CONFIGURATION
-   ----------------------------
-   For now: all users get admin privileges (dropdown editable)
-   To revert to role-based behavior:
-     - Replace 'true' with proper role check in the first if
-     - e.g., if(["admin","owner","officer"].includes(myRole)){ ... }
-*/
 function configureEmployeeField(){
   const field = document.getElementById("fullName");
-  
-  if(true){ // temporary: all users are treated as admin
-    field.style.display = "inline-block"; // show dropdown
+
+  if (["admin","owner","officer"].includes(myRole)) {
+    field.disabled = false;
     field.value = myName || "";
-    if(!field.value) field.selectedIndex = 1;
-  } else if(["admin","owner","officer"].includes(myRole)){
-    // future: real role-based control
-    field.style.display = "inline-block";
-    field.value = myName || "";
-    if(!field.value) field.selectedIndex = 1;
+    if (!field.value){
+      field.selectedIndex = 1;
+    }
   } else {
-    field.style.display = "none"; // hide for other roles
     field.value = myName || "";
+    field.disabled = true;
   }
 }
 
@@ -161,10 +152,12 @@ async function api(payload){
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
   });
+
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); }
   catch { throw new Error(text.slice(0,200)); }
+
   if (!data.ok) throw new Error(data.error || "Request failed");
   return data;
 }
@@ -186,15 +179,30 @@ function applyFiltersAndRender(){
   const search = document.getElementById("searchText").value.toLowerCase();
   const sortMode = document.getElementById("sortMode").value;
 
-  if(actionFilter!=="ALL") rows = rows.filter(r=>r[1]===actionFilter);
-  if(dateFrom) rows = rows.filter(r=>String(r[2]||"").slice(0,10)>=dateFrom);
-  if(dateTo) rows = rows.filter(r=>String(r[2]||"").slice(0,10)<=dateTo);
-  if(search) rows = rows.filter(r=>(r[0]+r[1]+r[2]).toLowerCase().includes(search));
+  if (actionFilter !== "ALL")
+    rows = rows.filter(r => r[1] === actionFilter);
+
+  if (dateFrom)
+  rows = rows.filter(r => {
+    const day = String(r[2] || "").slice(0, 10); // YYYY-MM-DD
+    return day && day >= dateFrom;
+  });
+
+  if (dateTo)
+    rows = rows.filter(r => {
+      const day = String(r[2] || "").slice(0, 10); // YYYY-MM-DD
+      return day && day <= dateTo;
+  });
+
+  if (search)
+    rows = rows.filter(r =>
+      (r[0]+r[1]+r[2]).toLowerCase().includes(search)
+    );
 
   rows.sort((a,b)=>{
     if(sortMode==="TS_DESC"||sortMode==="TS_ASC"){
       const da=parseTS(a[2]), db=parseTS(b[2]);
-      return sortMode==="TS_DESC"? db-da : da-db;
+      return sortMode==="TS_DESC" ? db-da : da-db;
     }
     if(sortMode==="ACT_ASC") return a[1].localeCompare(b[1]);
     if(sortMode==="ACT_DESC") return b[1].localeCompare(a[1]);
@@ -204,41 +212,47 @@ function applyFiltersAndRender(){
   const tbody = document.getElementById("tbody");
   tbody.innerHTML = "";
 
+  // Group-color by date (YYYY-MM-DD), alternating A/B per day
   let lastDay = null;
   let dayFlip = false;
 
-  rows.forEach(r=>{
-    const ts=String(r[2]||"");
-    const day=ts.slice(0,10);
-    if(day && day!==lastDay){ dayFlip=!dayFlip; lastDay=day; }
+  rows.forEach(r => {
+    const ts = String(r[2] || "");
+    const day = ts.slice(0, 10); // "YYYY-MM-DD" from "YYYY-MM-DD HH:MM:SS"
+
+    if (day && day !== lastDay) {
+      dayFlip = !dayFlip;
+      lastDay = day;
+    }
 
     const tr = document.createElement("tr");
-    tr.className = dayFlip?"dayA":"dayB";
-    const tdName = document.createElement("td"); tdName.textContent = r[0]||"";
-    const tdAction = document.createElement("td"); tdAction.textContent = r[1]||"";
-    const tdTS = document.createElement("td"); tdTS.textContent = r[2]||"";
-    tr.appendChild(tdName); tr.appendChild(tdAction); tr.appendChild(tdTS);
+    tr.className = dayFlip ? "dayA" : "dayB";
+    tr.innerHTML = `<td>${r[0]||""}</td><td>${r[1]||""}</td><td>${r[2]||""}</td>`;
     tbody.appendChild(tr);
   });
 
-  document.getElementById("tbl").classList.toggle("hidden", rows.length===0);
+
+  document.getElementById("tbl").classList.toggle("hidden",rows.length===0);
 }
 
-document.getElementById("loadBtn").onclick = async ()=>{
+document.getElementById("loadBtn").onclick=async()=>{
   try{
-    const fullName = document.getElementById("fullName").value;
-    if(!fullName) throw new Error("No employee selected");
-    const limit = Number(document.getElementById("limit").value || 200);
-
-    const out = await api({action:"GET_LOGS", token, fullName:String(fullName), limit});
-    allRows = out.rows || [];
+    const fullName=document.getElementById("fullName").value;
+    const limit=Number(document.getElementById("limit").value||200);
+    
+    console.log("Full name: ", fullName);
+    console.log("Role: ", myRole);
+    console.log("Logged user: ", myName);
+    
+    const out=await api({action:"GET_LOGS",token,fullName,limit});
+    allRows=out.rows||[];
     applyFiltersAndRender();
-    setMsg("mainMsg", "Logs loaded.", "ok");
-  }catch(e){ setMsg("mainMsg", e.message, "err"); }
+    setMsg("mainMsg","Logs loaded.","ok");
+  }catch(e){setMsg("mainMsg",e.message,"err");}
 };
 
-document.getElementById("applyBtn").onclick = applyFiltersAndRender;
-document.getElementById("resetBtn").onclick = ()=>{
+document.getElementById("applyBtn").onclick=applyFiltersAndRender;
+document.getElementById("resetBtn").onclick=()=>{
   document.getElementById("actionFilter").value="ALL";
   document.getElementById("dateFrom").value="";
   document.getElementById("dateTo").value="";
@@ -247,99 +261,106 @@ document.getElementById("resetBtn").onclick = ()=>{
   applyFiltersAndRender();
 };
 
-document.getElementById("calcBtn").onclick = async ()=>{
+document.getElementById("calcBtn").onclick=async()=>{
   try{
-    const fullName = document.getElementById("fullName").value;
-    const from = document.getElementById("dateFrom").value;
-    const to = document.getElementById("dateTo").value;
-    if(!from||!to) throw new Error("Please set Date From and Date To first.");
+    const fullName=document.getElementById("fullName").value;
 
-    const dailyRate = Number(document.getElementById("dailyRate").value);
-    const otRate = Number(document.getElementById("otRate").value);
+    // Use the same date filters as logs
+    const from=document.getElementById("dateFrom").value;
+    const to=document.getElementById("dateTo").value;
 
-    const out = await api({action:"CALC_PAYROLL_SHIFT", token, fullName, from, to, dailyRate, otRate});
+    if (!from || !to) throw new Error("Please set Date From and Date To first.");
+
+    const dailyRate=Number(document.getElementById("dailyRate").value);
+    const otRate=Number(document.getElementById("otRate").value);
+
+    const out=await api({
+      action:"CALC_PAYROLL_SHIFT",
+      token,fullName,from,to,dailyRate,otRate
+    });
+
     setMsg("mainMsg",
-      "Payroll "+out.from+" to "+out.to+"\nDays Paid: "+out.daysPaid+"\nOvertime: "+out.overtimeHours+"\nTotal Pay: "+out.totalPay,
+      `Payroll ${out.from} to ${out.to}\nDays Paid: ${out.daysPaid}\nOvertime: ${out.overtimeHours}\nTotal Pay: ${out.totalPay}`,
       "ok"
     );
-  }catch(e){ setMsg("mainMsg", e.message, "err"); }
+  }catch(e){setMsg("mainMsg",e.message,"err");}
 };
 
-document.getElementById("loginBtn").onclick = async ()=>{
+
+document.getElementById("loginBtn").onclick=async()=>{
   try{
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const out = await api({action:"LOGIN", username, password});
-    token = out.token; myName = out.fullName; myRole = out.role || "user";
-
-    localStorage.setItem("tt_token", token);
-    localStorage.setItem("tt_fullName", myName);
-    localStorage.setItem("tt_role", myRole);
-
-    document.getElementById("who").textContent = "Logged in as: "+myName+" ("+myRole+")";
+    const username=document.getElementById("username").value;
+    const password=document.getElementById("password").value;
+    const out=await api({action:"LOGIN",username,password});
+    token=out.token; myName=out.fullName; myRole=out.role||"user";
+    localStorage.setItem("tt_token",token);
+    localStorage.setItem("tt_fullName",myName);
+    localStorage.setItem("tt_role",myRole);
+    document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
-
     configureEmployeeField();
     setDefaultCutoffDates();
     document.getElementById("loadBtn").click();
-  }catch(e){ setMsg("loginMsg", e.message, "err"); }
+  }catch(e){setMsg("loginMsg",e.message,"err");}
 };
 
-document.getElementById("logoutBtn").onclick = async ()=>{
-  try{ await api({action:"LOGOUT", token}); }catch(e){}
+document.getElementById("logoutBtn").onclick=async()=>{
+  try{await api({action:"LOGOUT",token});}catch(e){}
   localStorage.clear();
   location.reload();
 };
 
-document.getElementById("backBtn").onclick = ()=> window.location.href="./index.html";
+document.getElementById("backBtn").onclick=()=>window.location.href="./index.html";
 
 function setDefaultCutoffDates(){
   const fromEl = document.getElementById("dateFrom");
   const toEl = document.getElementById("dateTo");
-  if(fromEl.value || toEl.value) return;
+
+  // Do nothing if user already set either date
+  if (fromEl.value || toEl.value) return;
 
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth();
+  const month = now.getMonth(); // 0-based
   const day = now.getDate();
 
   let fromDate, toDate;
-  if(day <= 15){
+
+  if (day <= 15) {
     fromDate = new Date(year, month, 1);
     toDate = new Date(year, month, 15);
-  }else{
+  } else {
     fromDate = new Date(year, month, 16);
-    toDate = new Date(year, month + 1, 0);
+    toDate = new Date(year, month + 1, 0); // last day of current month
   }
 
-  function fmt(d){
-    var yyyy=d.getFullYear();
-    var mm=String(d.getMonth()+1).padStart(2,"0");
-    var dd=String(d.getDate()).padStart(2,"0");
-    return yyyy+"-"+mm+"-"+dd;
-  }
+  const fmt = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
   fromEl.value = fmt(fromDate);
   toEl.value = fmt(toDate);
 }
 
 (async function autoLogin(){
-  if(!token) return;
+  if(!token)return;
   try{
-    const out = await api({action:"WHOAMI", token});
-    myName = out.fullName; myRole = out.role || "user";
-
-    document.getElementById("who").textContent = "Logged in as: "+myName+" ("+myRole+")";
+    const out=await api({action:"WHOAMI",token});
+    myName=out.fullName; myRole=out.role||"user";
+    document.getElementById("who").textContent=`Logged in as: ${myName} (${myRole})`;
     document.getElementById("loginCard").classList.add("hidden");
     document.getElementById("mainCard").classList.remove("hidden");
-
     configureEmployeeField();
     setDefaultCutoffDates();
     document.getElementById("loadBtn").click();
-  }catch(e){ localStorage.clear(); }
+  }catch(e){
+    localStorage.clear();
+  }
 })();
 </script>
-
 </body>
 </html>
