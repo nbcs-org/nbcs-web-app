@@ -237,7 +237,8 @@ function applyFiltersAndRender(){
 
 document.getElementById("loadBtn").onclick=async()=>{
   try{
-    const fullName=document.getElementById("fullName").value;
+    const sel = document.getElementById("fullName");
+    const fullName=sel.disabled ? myName : sel.value;
     const limit=Number(document.getElementById("limit").value||200);
     
     console.log("Full name: ", fullName);
@@ -263,7 +264,8 @@ document.getElementById("resetBtn").onclick=()=>{
 
 document.getElementById("calcBtn").onclick=async()=>{
   try{
-    const fullName=document.getElementById("fullName").value;
+    const sel = document.getElementById("fullName");
+    const fullName=sel.disabled ? myName : sel.value;
 
     // Use the same date filters as logs
     const from=document.getElementById("dateFrom").value;
